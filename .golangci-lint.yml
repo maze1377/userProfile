@@ -1,0 +1,91 @@
+run:
+  timeout: 10m
+  skip-dirs:
+    - mocks
+
+linters-settings:
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - unnamedResult
+
+  exhaustive:
+    # check switch statements in generated files also
+    check-generated: false
+    # indicates that switch statements are to be considered exhaustive if a
+    # 'default' case is present, even if all enum members aren't listed in the
+    # switch
+    default-signifies-exhaustive: true
+
+
+  godox:
+    # report any comments starting with keywords, this is useful for TODO or FIXME comments that
+    # might be left in the code accidentally and should be resolved before merging
+    keywords:
+      - todo
+      - fixme
+
+  govet:
+    check-shadowing: true
+    fieldalignment: true
+
+  lll:
+    line-length: 120
+    tab-width: 1
+
+  funlen:
+    lines: 100
+    statements: 45
+
+
+linters:
+  disable-all: true
+  enable:
+    - gofmt
+    - goimports
+    - deadcode
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - structcheck
+    - varcheck
+    - prealloc
+    - gocritic
+    - unconvert
+    - whitespace
+    - unused
+    - misspell
+    - staticcheck
+    - wsl
+    - revive
+    - nestif
+    - godox
+    - godot
+    - gocognit
+    - asciicheck
+    - unparam
+    - typecheck
+    - stylecheck
+    - rowserrcheck
+    - nolintlint
+    - noctx
+    - nakedret
+    - gosec
+    - gocyclo
+    - goconst
+    - gochecknoinits
+    - funlen
+    - exhaustive
+    - exportloopref
+    - dupl
+    - dogsled
+    - depguard
+    - bodyclose
+
+service:
+  golangci-lint-version: 1.42.x # use a fixed version to avoid introducing unexpected linters

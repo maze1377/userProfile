@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+// protoc -I. --go_out=plugins=grpc:$GOPATH/src ./api/userProfile/userProfile.proto
+
+package userProfile;
+option go_package = "userProfile/pkg/userProfile";
+
+import "google/protobuf/timestamp.proto";
+
+message UserProfile{
+  string clientID = 1;
+  ClientInfo clientInfo = 2;
+  AndroidInfo androidInfo = 3;
+  repeated Feature features = 4;
+  repeated Library libraries = 5;
+}
+
+enum Language {
+  NOT_SET = 0;
+  ENGLISH = 1;
+  PERSIAN = 2;
+}
+
+message ClientInfo {
+  string clientVersion = 1;
+  int64 clientVersionCode = 2;
+  string model = 3;
+  Language language = 4;
+}
+
+message AndroidInfo {
+  int32 sdkVersion = 1;
+  int32 dpi = 2;
+  string cpu = 3;
+  string gpu = 4;
+}
+
+message Feature {
+  string name = 1;
+}
+
+message Library {
+  string name = 1;
+}
+
+message Contains {
+  bool clientInfo = 1;
+  bool androidInfo = 2;
+  bool library = 3;
+  bool feature = 4;
+}
+
+message registerRequest {
+  google.protobuf.Timestamp requestTimestamp = 1;
+  UserProfile userProfile = 2;
+}
+
+message registerResponse {
+  google.protobuf.Timestamp responseTimestamp = 1;
+}
+
+message ClientInfoRequest {
+  google.protobuf.Timestamp requestTimestamp = 1;
+  string clientID = 2;
+  Contains contains = 3;
+}
+
+message ClientInfoResponse {
+  google.protobuf.Timestamp responseTimestamp = 1;
+  UserProfile userProfile = 2;
+}
+
+service userProfile {
+  rpc registerClientInfo(registerRequest) returns (registerResponse);
+  rpc getClientInfo(ClientInfoRequest) returns (ClientInfoResponse);
+}
+

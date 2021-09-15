@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+  redis:
+    container_name: redis
+    restart: unless-stopped
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+    # network_mode: host
+
+  postgres:
+    container_name: postgres
+    restart: unless-stopped
+    image: postgres:12-alpine
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    # network_mode: host
+
+  #  zookeeper:
+  #    image: wurstmeister/zookeeper:latest
+  #    ports:
+  #      - 2181:2181
+  #    environment:
+  #      ALLOW_ANONYMOUS_LOGIN: "yes"
+  #
+  #  kafka:
+  #    image: wurstmeister/kafka:latest
+  #    environment:
+  #      HOSTNAME_COMMAND: "docker info | grep ^Name: | cut -d' ' -f 2" # Normal instances
+  #      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  #      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: D:PLAINTEXT,HST:PLAINTEXT
+  #      KAFKA_LISTENERS: D://:9093,HST://:9092
+  #      KAFKA_ADVERTISED_LISTENERS: D://:9093,HST://localhost:9092
+  #      KAFKA_INTER_BROKER_LISTENER_NAME: D
+  #      KAFKA_JMX_OPTS: -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=kafka -Dcom.sun.management.jmxremote.rmi.port=1099
+  #      JMX_PORT: 1099
+  #    ports:
+  #      - 9092:9092
+  #    depends_on:
+  #      - zookeeper
+  ##      network_mode: "host"
+  #
+  #  kafka-ui:
+  #    image: provectuslabs/kafka-ui
+  #    container_name: kafka-ui
+  #    ports:
+  #      - 8080:8080
+  #    environment:
+  #      - KAFKA_CLUSTERS_0_NAME=local
+  #      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9093
+  #      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+  #    depends_on:
+  #      - kafka

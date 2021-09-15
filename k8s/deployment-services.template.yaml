@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: userProfile
+  labels:
+    app: userProfile
+    appstage: downloadswitch
+spec:
+  replicas: 12
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: userProfile
+  template:
+    metadata:
+      labels:
+        app: userProfile
+    spec:
+      containers:
+        - name: userProfile
+          env:
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  key: database-username
+                  name: userProfile-secrets
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: database-password
+                  name: userProfile-secrets
+          image: localhost:32000/userProfile:registry
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: beroozresan
+              containerPort: 10000
+          startupProbe:
+            exec:
+              command: [ "/bin/grpc_health_probe", "-addr=:10001", "-service=startupProbe" ]
+            failureThreshold: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: [ "/bin/grpc_health_probe", "-addr=:10001", "-service=readinessProbe" ]
+            periodSeconds: 5
+            failureThreshold: 3
+            initialDelaySeconds: 60
+            successThreshold: 1
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: [ "/bin/grpc_health_probe", "-addr=:10001", "-service=livenessProbe","-rpc-timeout=500ms" ]
+            periodSeconds: 5
+            failureThreshold: 6
+            initialDelaySeconds: 60
+            successThreshold: 1
+            timeoutSeconds: 5
+          args:
+            - serve
+            - -c
+            - /config/config.yml
+          volumeMounts:
+            - mountPath: /config
+              name: config
+          resources:
+            requests:
+              cpu: 800m
+              memory: 5200Mi
+            limits:
+              cpu: 1800m
+              memory: 5700Mi
+      volumes:
+        - name: config
+          configMap:
+            name: userProfile
+            items:
+              - key: config
+                path: config.yml
