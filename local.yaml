@@ -9,7 +9,7 @@ cache:
     host: "localhost"
     port: 6379
     db: 0
-    expirationTime: 259200
+    expirationTime: 600s
   bigCache:
     enabled: true
     shards: 1024

@@ -1,1 +1,0 @@
-{"userProfile":{"clientID":"123","clientInfo":{"clientVersion":"1.0.0","clientVersionCode":1,"model":"test","language":1},"androidInfo":{"sdkVersion":21,"dpi":480,"cpu":"x86","gpu":"Mali-G72"},"features":[{"name":"com.test"},{"name":"com.test2"}],"libraries":[{"name":"com.test"},{"name":"com.test2"}]}}
