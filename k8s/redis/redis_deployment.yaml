@@ -34,3 +34,5 @@ spec:
       volumes:
         - name: redis-data
           emptyDir: { }
+      imagePullSecrets:
+        - name: regcred

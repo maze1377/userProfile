@@ -76,3 +76,5 @@ spec:
             items:
               - key: config
                 path: config.yml
+      imagePullSecrets:
+        - name: regcred
