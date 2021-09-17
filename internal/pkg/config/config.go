@@ -58,9 +58,9 @@ type PrometheusConfig struct {
 }
 
 type RedisConfig struct {
+	HostReadOnly   []string
 	Enabled        bool
-	Host           string
-	Port           int
+	HostMaster     string
 	DB             int
 	Prefix         string
 	Password       string
@@ -97,8 +97,8 @@ func LoadConfig(cmd *cobra.Command) (*Config, error) { // todo
 	viper.SetDefault("database.read.database", "userProfile")
 	viper.SetDefault("database.read.ssl", false)
 
-	viper.SetDefault("cache.redis.host", "127.0.0.1")
-	viper.SetDefault("cache.redis.port", 6379)
+	viper.SetDefault("cache.redis.host_master", "127.0.0.1:6379")
+	viper.SetDefault("cache.redis.host_read_only", []string{})
 	viper.SetDefault("cache.redis.db", 0)
 	viper.SetDefault("cache.redis.expirationTime", 3*time.Hour)
 	viper.SetDefault("cache.redis.prefix", "USER_VIEW")
@@ -174,8 +174,8 @@ func (c *Config) updateSettings() {
 	c.Database.ReadClients.Database = viper.GetString("database.read.database")
 	c.Database.ReadClients.SSL = viper.GetBool("database.read.ssl")
 
-	c.Cache.Redis.Host = viper.GetString("cache.redis.host")
-	c.Cache.Redis.Port = viper.GetInt("cache.redis.port")
+	c.Cache.Redis.HostMaster = viper.GetString("cache.redis.host_master")
+	c.Cache.Redis.HostReadOnly = viper.GetStringSlice("cache.redis.host_read_only")
 	c.Cache.Redis.DB = viper.GetInt("cache.redis.db")
 	c.Cache.Redis.ExpirationTime = viper.GetDuration("cache.redis.expirationTime")
 	c.Cache.Redis.Prefix = viper.GetString("cache.redis.prefix")

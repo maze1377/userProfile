@@ -2,9 +2,7 @@
 
 # todo
 
-- support writeClient and readClient for postgres
-- redis Replicas read from config
-- config hot reload
+- config hot reload action
 - complete readme
 - staging and canary support :)
 

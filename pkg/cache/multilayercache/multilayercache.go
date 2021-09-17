@@ -25,8 +25,7 @@ func New(layers ...cache.Layer) cache.Layer {
 
 func (mc *multilayerCache) Get(ctx context.Context, key string, reference interface{}) error {
 	value, err := mc.performOperation(func(layer cache.Layer) (interface{}, error) {
-		// todo create new item from reference
-		items := reflect.ValueOf(reference).Interface()
+		items := reflect.New(reflect.ValueOf(reference).Elem().Type()).Interface()
 		err := layer.Get(ctx, key, items)
 		return items, err
 	})

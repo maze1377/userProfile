@@ -20,7 +20,7 @@ func newTestRedis() string {
 
 func Test_Redis(t *testing.T) {
 	masterServer := newTestRedis()
-	ri := NewRedisAdaptor(&InstanceOptions{
+	ri, err := NewRedisAdaptor(&InstanceOptions{
 		Address: InstanceOptionsAddress{
 			Master: masterServer,
 			Replicas: []string{
@@ -29,13 +29,18 @@ func Test_Redis(t *testing.T) {
 			},
 		},
 	})
+
+	if err != nil {
+		t.Error("Error redis connection", err)
+	}
+
 	ctx := context.Background()
 
 	key := "test-key"
 	value := "test-value"
 
 	// Test Set value
-	err := ri.Set(ctx, key, value)
+	err = ri.Set(ctx, key, value)
 	if err != nil {
 		t.Error("Error on Set in Redis", err)
 	}

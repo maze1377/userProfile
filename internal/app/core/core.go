@@ -30,9 +30,25 @@ func New(provider provider.ClientInfoProvider, cache cache.Layer) userProfile.Us
 }
 
 func (c *core) GetClientInfo(
-	ctx context.Context, clientInfo *userProfile.ClientInfoRequest) (result *userProfile.ClientInfoResponse, err error) {
+	ctx context.Context, clientInfo *userProfile.ClientInfoRequest) (result *userProfile.ClientInfoResponse, errResult error) {
+	defer func() {
+		if errResult == nil {
+			contains := clientInfo.GetContains()
+			if !contains.GetClientInfo() {
+				result.UserProfile.ClientInfo = nil
+			}
+			if !contains.GetAndroidInfo() {
+				result.UserProfile.AndroidInfo = nil
+			}
+			if !contains.GetFeature() {
+				result.UserProfile.Features = nil
+			}
+			if !contains.GetLibrary() {
+				result.UserProfile.Libraries = nil
+			}
+		}
+	}()
 	profile, err := c.getClientInfoFromCache(ctx, clientInfo.GetClientID())
-	// todo implemented Contains
 	if err != nil {
 		logrus.WithError(err).WithFields(map[string]interface{}{
 			"clientId": clientInfo.GetClientID(),

@@ -3,7 +3,10 @@ package multilayercache
 import (
 	"context"
 	"testing"
+	"userProfile/pkg/cache"
 	"userProfile/pkg/cache/adaptors"
+
+	"golang.org/x/xerrors"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -30,7 +33,10 @@ func TestSetGet(t *testing.T) {
 	}
 
 	err = multiLayerCache.Get(ctx, key, &resultValue)
-	// todo assert error wrapped by key not NotFound
+
+	if !xerrors.Is(err, cache.ErrKeyNotFound) {
+		t.Error("find deleted key!", err)
+	}
 
 	err = multiLayerCache.Clear(ctx)
 	if !assert.NoError(t, err) {

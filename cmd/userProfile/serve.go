@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -21,7 +20,6 @@ import (
 
 	"github.com/allegro/bigcache/v2"
 
-	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -92,15 +90,19 @@ func provideServer(server userProfile.UserProfileServer, config *config.Config, 
 }
 
 func provideProvider(config *config.Config, _ *logrus.Logger, _ *prometheus.Server) provider.ClientInfoProvider {
-	// todo support read-only DB
-	db, err := sql.GetDatabase(config.Database.WriteClient)
+	dbWrite, err := sql.GetDatabase(config.Database.WriteClient)
 	if err != nil {
 		logrus.WithError(err).WithField(
-			"database", config.Database.WriteClient).Panic("failed to connect to DB")
+			"database write", config.Database.WriteClient).Panic("failed to connect to DB")
 		return nil
 	}
-
-	providerInstance := provider.NewSQL(db)
+	dbRead, err := sql.GetDatabase(config.Database.ReadClients)
+	if err != nil {
+		logrus.WithError(err).WithField(
+			"database read", config.Database.WriteClient).Panic("failed to connect to DB")
+		return nil
+	}
+	providerInstance := provider.NewSQLWithReadAndWrite(dbWrite, dbRead)
 	err = providerInstance.(sql.Migrate).Migrate()
 	if err != nil {
 		logrus.WithError(err).WithField(
@@ -118,27 +120,21 @@ func provideProvider(config *config.Config, _ *logrus.Logger, _ *prometheus.Serv
 func provideCache(config *config.Config) (cache.Layer, error) {
 	var cacheLayers []cache.Layer
 	if config.Cache.Redis.Enabled {
-		Addr := fmt.Sprintf("%s:%d", config.Cache.Redis.Host, config.Cache.Redis.Port)
-		// todo support redis cluster
-		redisClient := redis.NewClient(&redis.Options{
-			DB: config.Cache.Redis.DB,
-		})
 		redisConfig := adaptors.InstanceOptions{
 			Address: adaptors.InstanceOptionsAddress{
-				Master: Addr,
+				Master:   config.Cache.Redis.HostMaster,
+				Replicas: config.Cache.Redis.HostReadOnly,
 			},
 			Password: config.Cache.Redis.Password,
 			DBNumber: config.Cache.Redis.DB,
 			Expire:   config.Cache.Redis.ExpirationTime,
 		}
-		// Ping Redis
-		err := redisClient.Ping().Err()
+		redisCache, err := adaptors.NewRedisAdaptor(
+			&redisConfig)
 		if err != nil {
-			return nil, errors.Wrap(err, "fail to connect to redis")
+			return nil, errors.Wrap(err, "fail to redis cache")
 		}
-		cacheLayers = append(cacheLayers, adaptors.NewRedisAdaptor(
-			&redisConfig))
-
+		cacheLayers = append(cacheLayers, redisCache)
 	}
 
 	if config.Cache.BigCache.Enabled {
@@ -174,7 +170,14 @@ func panicWithError(err error, format string, args ...interface{}) {
 
 func providePrometheus(config *config.Config) *prometheus.Server {
 	if config.Prometheus.Enabled {
-		return prometheus.NewServer(config.Prometheus.Port)
+		server := prometheus.NewServer(config.Prometheus.Port)
+		go func() {
+			err := server.Serve()
+			if err != nil {
+				panicWithError(err, "failed to start prometheus server")
+			}
+		}()
+		return server
 	}
 	return nil
 }

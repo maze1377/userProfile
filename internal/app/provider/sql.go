@@ -17,7 +17,9 @@ import (
 )
 
 type sqlProvider struct {
-	db *gorm.DB
+	write  *gorm.DB
+	read   *gorm.DB
+	number int
 }
 
 type userInfo struct {
@@ -29,30 +31,52 @@ type userInfo struct {
 
 func NewSQL(db *gorm.DB) ClientInfoProvider {
 	return sqlProvider{
-		db: db,
+		write:  db,
+		read:   db,
+		number: 1,
+	}
+}
+
+func NewSQLWithReadAndWrite(write, read *gorm.DB) ClientInfoProvider {
+	return sqlProvider{
+		write:  write,
+		read:   read,
+		number: 2,
 	}
 }
 
 func (p sqlProvider) Close() error {
-	sqlDB, err := p.db.DB()
+	sqlDB, err := p.write.DB()
 	if err != nil {
 		log.Fatalln(err)
 		return err
 	}
-	return sqlDB.Close()
-
+	errWrite := sqlDB.Close()
+	var errRead error
+	if p.number == 2 {
+		sqlDB, err := p.read.DB()
+		if err != nil {
+			log.Fatalln(err)
+			return err
+		}
+		errRead = sqlDB.Close()
+	}
+	if errWrite != nil {
+		return errWrite
+	}
+	return errRead
 }
 
 func (p sqlProvider) GetClientInfo(ctx context.Context, clientInfo *userProfile.ClientInfoRequest) (*userProfile.UserProfile, error) {
 	clientInfoInstance := &userInfo{}
-	err := p.db.Where("client_id = ?", clientInfo.GetClientID()).First(clientInfoInstance).Error
+	err := p.read.Where("client_id = ?", clientInfo.GetClientID()).First(clientInfoInstance).Error
 	if err != nil {
 		if basicError.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.WrapWithExtra(ErrNotFound, "userInfo not found", map[string]interface{}{
 				"clientId": clientInfo.GetClientID(),
 			})
 		}
-		return nil, errors.WrapWithExtra(err, "could not read userInfo from db", map[string]interface{}{
+		return nil, errors.WrapWithExtra(err, "could not read userInfo from write", map[string]interface{}{
 			"clientId": clientInfo.GetClientID(),
 		})
 	}
@@ -75,12 +99,12 @@ func (p sqlProvider) RegisterClientInfo(ctx context.Context, clientInfo *userPro
 		})
 	}
 
-	err = p.db.Clauses(clause.OnConflict{
+	err = p.write.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "client_id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"data", "deleted_at", "updated_at"}),
 	}).Create(modelInstance).Error
 	if err != nil {
-		return errors.WrapWithExtra(err, "could not add model to db", map[string]interface{}{
+		return errors.WrapWithExtra(err, "could not add model to write", map[string]interface{}{
 			"userInfo": clientInfo.GetUserProfile(),
 		})
 	}
@@ -89,7 +113,11 @@ func (p sqlProvider) RegisterClientInfo(ctx context.Context, clientInfo *userPro
 }
 
 func (p sqlProvider) Migrate() error {
-	err := p.db.AutoMigrate(&userInfo{})
+	err := p.write.AutoMigrate(&userInfo{})
+	if err != nil {
+		return err
+	}
+	err = p.read.AutoMigrate(&userInfo{})
 	return err
 }
 

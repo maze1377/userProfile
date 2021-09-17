@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 	"userProfile/pkg/cache"
+	"userProfile/pkg/errors"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -28,16 +29,21 @@ type Instance struct {
 	expire          time.Duration
 }
 
-func NewRedisAdaptor(option *InstanceOptions) cache.Layer {
+func NewRedisAdaptor(option *InstanceOptions) (cache.Layer, error) {
 	return newRedisInstance(option)
 }
 
-func newRedisInstance(option *InstanceOptions) *Instance {
+func newRedisInstance(option *InstanceOptions) (*Instance, error) {
 	master := redis.NewClient(&redis.Options{
 		Addr:     option.Address.Master,
 		Password: option.Password,
 		DB:       option.DBNumber,
 	})
+
+	err := master.Ping(context.Background()).Err()
+	if err != nil {
+		return nil, errors.New("fail to connect to redis")
+	}
 
 	read := []*redis.Client{master}
 
@@ -56,7 +62,7 @@ func newRedisInstance(option *InstanceOptions) *Instance {
 		readClients:     read,
 		readClientCount: len(read),
 		expire:          option.Expire,
-	}
+	}, nil
 }
 
 func (inst *Instance) getWriteClient() *redis.Client {

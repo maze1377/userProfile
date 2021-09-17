@@ -6,8 +6,8 @@ listenPort: 10000
 cache:
   redis:
     enabled: true
-    host: "localhost"
-    port: 6379
+    host_master: "localhost:6379"
+    host_read_only: ""
     db: 0
     expirationTime: 600s
   bigCache:
